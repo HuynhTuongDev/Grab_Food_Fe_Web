@@ -110,6 +110,12 @@ export const userApi = {
             const userId = res.data?.result?.id || 'guest';
             const fakeToken = `session-bypass-token-${userId}-${Date.now()}`;
             localStorage.setItem('token', fakeToken);
+
+            // SAVE BYPASS USER INFO
+            if (res.data?.result) {
+                localStorage.setItem('bypass_user', JSON.stringify(res.data.result));
+            }
+
             console.warn("CRITICAL BACKEND BUG: No token found. Using SESSION BYPASS MODE.");
             return { ...res, token: fakeToken };
         } else {
@@ -125,15 +131,26 @@ export const userApi = {
             const token = localStorage.getItem('token');
             if (token?.startsWith('session-bypass-token')) {
                 console.warn("Profile fetch failed, using bypass fallback info...");
-                // Extract whatever we can from the last session if needed, 
-                // but for now return a valid-looking dummy to prevent UI crashes.
+
+                // Try to restore user info from login bypass
+                const storedUser = localStorage.getItem('bypass_user');
+                let bypassData = {
+                    id: 'bypass',
+                    name: 'Người dùng (Guest Mode)',
+                    email: 'guest@example.com',
+                    balance: 500000,
+                    roleName: 'Customer'
+                };
+
+                if (storedUser) {
+                    try {
+                        const parsed = JSON.parse(storedUser);
+                        bypassData = { ...bypassData, ...parsed };
+                    } catch { }
+                }
+
                 return {
-                    data: {
-                        id: 'bypass',
-                        name: 'Người dùng (Guest Mode)',
-                        email: 'guest@example.com',
-                        balance: 500000
-                    },
+                    data: bypassData,
                     status: 200, statusText: 'OK', headers: {}, config: {} as any
                 };
             }
@@ -151,7 +168,82 @@ export const userApi = {
     },
 };
 
+export const managerApi = {
+    getOrders: () => api.get('/api/orders/store'),
+    updateStatus: (orderId: string, status: string) => api.patch(`/api/orders/${orderId}`, { status }),
+    getStoreOrders: (storeId: number) => api.get(`/api/orders/store/${storeId}`),
+};
+
+export const addressApi = {
+    getAll: () => api.get('/api/addresses'),
+    create: (data: any) => api.post('/api/addresses', data),
+    getById: (id: number) => api.get(`/api/addresses/${id}`),
+    update: (id: number, data: any) => api.put(`/api/addresses/${id}`, data),
+    delete: (id: number) => api.delete(`/api/addresses/${id}`),
+    getDefault: () => api.get('/api/addresses/default'),
+    setDefault: (id: number) => api.put(`/api/addresses/${id}/default`),
+};
+
+export const favoriteApi = {
+    getStores: () => api.get('/api/favorites/stores'),
+    addStore: (storeId: number) => api.post(`/api/favorites/stores/${storeId}`),
+    removeStore: (storeId: number) => api.delete(`/api/favorites/stores/${storeId}`),
+    checkStore: (storeId: number) => api.get(`/api/favorites/stores/${storeId}/check`),
+
+    getFoods: () => api.get('/api/favorites/foods'),
+    addFood: (foodId: number) => api.post(`/api/favorites/foods/${foodId}`),
+    removeFood: (foodId: number) => api.delete(`/api/favorites/foods/${foodId}`),
+    checkFood: (foodId: number) => api.get(`/api/favorites/foods/${foodId}/check`),
+};
+
+export const reviewApi = {
+    create: (data: any) => api.post('/api/reviews', data),
+    getMyReviews: () => api.get('/api/reviews/my-reviews'),
+    getByFood: (foodId: number) => api.get(`/api/reviews/food/${foodId}`),
+    getByStore: (storeId: number) => api.get(`/api/reviews/store/${storeId}`),
+    canReview: (orderId: string) => api.get(`/api/reviews/can-review/${orderId}`),
+    reply: (id: number, reply: string) => api.post(`/api/reviews/${id}/reply`, { reply }),
+};
+
+export const walletApi = {
+    getBalance: () => api.get('/api/wallet/balance'),
+    deposit: (amount: number) => api.post('/api/wallet/deposit', { amount }),
+    getTransactions: () => api.get('/api/wallet/transactions'),
+    checkBalance: (amount: number) => api.get(`/api/wallet/check-balance/${amount}`),
+    momoIpn: (data: any) => api.post('/api/wallet/momo/ipn', data),
+    momoReturn: (params: any) => api.get('/api/wallet/momo/return', { params }),
+};
+
+export const notificationApi = {
+    getAll: () => api.get('/api/notifications'),
+    getUnreadCount: () => api.get('/api/notifications/unread-count'),
+    markRead: (id: number) => api.put(`/api/notifications/${id}/read`),
+    markAllRead: () => api.put('/api/notifications/read-all'),
+};
+
+export const tenantApi = {
+    getAll: () => api.get('/api/tenants'),
+    create: (data: any) => api.post('/api/tenants', data),
+    update: (data: any) => api.put('/api/tenants', data),
+    getById: (id: number) => api.get(`/api/tenants/${id}`),
+    delete: (id: number) => api.delete(`/api/tenants/${id}`),
+};
+
 export const voucherApi = {
     getAll: () => api.get('/api/vouchers'),
+    getAvailable: () => api.get('/api/vouchers/available'),
+    getByCode: (code: string) => api.get(`/api/vouchers/code/${code}`),
+    apply: (code: string) => api.post('/api/vouchers/apply', { code }),
     getById: (id: string) => api.get(`/api/vouchers/${id}`),
+    create: (data: any) => api.post('/api/vouchers', data),
+    update: (id: number, data: any) => api.put(`/api/vouchers/${id}`, data),
+    delete: (id: number) => api.delete(`/api/vouchers/${id}`),
+    getActive: () => api.get('/api/vouchers/active'),
+};
+
+export const adminApi = {
+    // Re-using generic generic APIs for admin features
+    getProfiles: () => api.get('/api/users/profile'), // Revisit if this should be getAllProfiles
+    getStores: () => api.get('/api/stores'),
+    getFoodTypes: () => api.get('/api/food-types'),
 };

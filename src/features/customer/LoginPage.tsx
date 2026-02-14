@@ -5,6 +5,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { userApi } from '../../api/api';
+import { authStorage, type RoleName } from '../../utils/auth';
+import { getHomeByRole } from '../../utils/roleRedirect';
+
 
 export default function LoginPage() {
     const navigate = useNavigate();
@@ -13,9 +16,23 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
 
     useEffect(() => {
-        if (localStorage.getItem('token')) {
-            navigate('/', { replace: true });
-        }
+        const token = authStorage.getToken();
+        if (!token) return;
+
+        (async () => {
+            try {
+                const profile = await userApi.profile();
+                // 1. Try to get role from Token first (most reliable)
+                const tokenUser = authStorage.getUserFromToken();
+                let roleName = tokenUser?.role || tokenUser?.Role || tokenUser?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || profile.data.roleName;
+
+                const role = (roleName || 'Customer') as RoleName;
+                authStorage.setRole(role);
+                navigate(getHomeByRole(role), { replace: true });
+            } catch {
+                authStorage.clear();
+            }
+        })();
     }, [navigate]);
 
     const handleLogin = async (e: React.FormEvent) => {
@@ -23,13 +40,28 @@ export default function LoginPage() {
         setIsLoading(true);
 
         try {
-            await userApi.login({ email, password });
+            const loginRes = await userApi.login({ email, password });
+
+            const profile = await userApi.profile();
+
+            // 1. Try to get role from Token first (most reliable)
+            const tokenUser = authStorage.getUserFromToken();
+            let roleName = tokenUser?.role || tokenUser?.Role || tokenUser?.['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
+                || loginRes.data?.result?.roleName
+                || loginRes.data?.roleName
+                || profile.data.roleName;
+
+            const role = (roleName || 'Customer') as RoleName;
+            authStorage.setRole(role);
+
             toast.success('Đăng nhập thành công');
-            window.location.href = '/'; // Hard redirect to refresh state if needed
+            navigate(getHomeByRole(role), { replace: true });
         } catch (error: any) {
-            const msg = error.response?.data?.message || error.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
+            const msg =
+                error.response?.data?.message ||
+                error.message ||
+                'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
             toast.error(msg);
-            console.error('Login Error Details:', error);
         } finally {
             setIsLoading(false);
         }

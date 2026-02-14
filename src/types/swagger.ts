@@ -7,11 +7,14 @@ export interface FoodDto {
     foodTypeName?: string;
     imageSrc?: string;
     isAvailable: boolean;
+    price?: number;
 }
 
 export interface FoodRequest {
+    name: string;
     imageSrc?: string;
     foodTypeId: number;
+    price: number;
 }
 
 export interface FoodUpdate {
@@ -68,6 +71,7 @@ export interface UserProfileDto { // Inferred name
     email: string;
     name: string;
     balance: number;
+    roleName?: string;
 }
 
 export interface CartItemDto {
@@ -87,3 +91,96 @@ export interface TenantUpdateRequest {
     id: number;
     name?: string;
 }
+
+export interface OrderDto {
+    id: string;
+    totalAmount: number;
+    orderDate: string;
+    status: 'New' | 'Preparing' | 'Ready' | 'Delivering' | 'Completed' | 'Cancelled';
+    user?: { name: string; phone: string; };
+    orderDetails?: OrderItemDto[];
+    note?: string;
+    driverName?: string;
+}
+
+export interface OrderItemDto {
+    quantity: number;
+    price: number;
+    foodName?: string;
+}
+
+export interface AddressDto {
+    id: number;
+    recipientName: string;
+    phone: string;
+    street: string;
+    city: string;
+    district: string;
+    isDefault: boolean;
+}
+
+export interface AddressRequest {
+    recipientName: string;
+    phone: string;
+    street: string;
+    city: string;
+    district: string;
+    isDefault?: boolean;
+}
+
+export interface ReviewDto {
+    id: number;
+    userId: string;
+    userName: string;
+    foodId?: number;
+    storeId?: number;
+    rating: number;
+    comment: string;
+    createdAt: string;
+    reply?: string;
+}
+
+export interface ReviewRequest {
+    foodId?: number;
+    storeId?: number;
+    rating: number;
+    comment: string;
+}
+
+export interface VoucherDto {
+    id: number;
+    code: string;
+    discountPercent: number;
+    maxDiscountAmount: number;
+    minOrderAmount: number;
+    expiryDate: string;
+    isActive: boolean;
+}
+
+export interface NotificationDto {
+    id: number;
+    title: string;
+    message: string;
+    isRead: boolean;
+    createdAt: string;
+    type?: string;
+}
+
+export interface WalletTransactionDto {
+    id: string;
+    amount: number;
+    type: 'Deposit' | 'Payment' | 'Refund';
+    description: string;
+    createdAt: string;
+    status: 'Success' | 'Failed' | 'Pending';
+}
+
+export interface TenantDto {
+    id: number;
+    name: string;
+    ownerId?: string;
+    address?: string;
+    status: 'Active' | 'Inactive';
+    createdAt: string;
+}
+

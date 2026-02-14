@@ -30,4 +30,21 @@ export default {
         },
     },
     plugins: [],
+
+    extend: {
+  colors: {
+    primary: "#ff8000",
+    "background-light": "#f8f7f5",
+    "background-dark": "#23190f",
+    "admin-sidebar": "#1d140c",
+    "admin-border": "#eadbcd",
+  },
+  fontFamily: {
+    display: ["Be Vietnam Pro", "system-ui", "sans-serif"],
+  },
+  borderRadius: {
+    xl: "1.5rem",
+  },
+}
+
 }

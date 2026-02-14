@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Manager Revenue Analytics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ff8000",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Be Vietnam Pro"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Be Vietnam Pro", sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-nav {
+            background-color: rgba(255, 128, 0, 0.1);
+            color: #ff8000;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-[#1d140c] dark:text-[#fcfaf8]">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 border-r border-[#eadbcd] dark:border-[#3d2d1e] bg-white dark:bg-[#1a120b] flex flex-col h-full">
+<div class="p-6 flex items-center gap-3">
+<div class="size-10 rounded-full bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined">restaurant</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-base font-bold leading-none">Partner Portal</h1>
+<p class="text-[#a17345] text-xs font-medium">Manager View</p>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-2 mt-4">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg active-nav" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-semibold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">list_alt</span>
+<span class="text-sm font-semibold">Orders</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-sm font-semibold">Menu</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-sm font-semibold">Profile</span>
+</a>
+</nav>
+<div class="p-4 border-t border-[#eadbcd] dark:border-[#3d2d1e]">
+<div class="flex items-center gap-3 p-2">
+<div class="size-8 rounded-full bg-cover bg-center" data-alt="Manager profile avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDY91Qjfax_QLItb7tea37YjvWNoqJDYaFnG3kk3d183U27FEt70WdevTwOHlSW4JfirYlEpNF2Jzh7p0KxylEDAvlf1ZoAJ6suUSlMRQya_wr-IP8YW2Ih_6nCeqzddYppyTiipr_nKYZZF5IFL-99BuIXOt0RNDo9rFpLLJ-bkIiWfI1pcHc1kX65fi-0PRkI3OVar0uDZDbTvaj-eTKsGCW7XhBXbsCbGmYwNZVvSumvs7laN4GeDDlmRf2l19fx0xi9xz7vWKAH')"></div>
+<div class="flex flex-col overflow-hidden">
+<p class="text-xs font-bold truncate">Saigon Bistro</p>
+<p class="text-[10px] text-[#a17345] truncate">District 1, HCMC</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark">
+<div class="max-w-6xl mx-auto p-8">
+<!-- Page Heading -->
+<div class="flex flex-wrap justify-between items-end gap-3 mb-8">
+<div class="flex flex-col gap-2">
+<h2 class="text-4xl font-black tracking-tight">Revenue Analytics</h2>
+<p class="text-[#a17345] text-base">Real-time overview of your restaurant's financial performance</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 border border-[#eadbcd] dark:border-[#3d2d1e] rounded-lg bg-white dark:bg-[#1a120b] font-semibold text-sm">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+                            Last 7 Days
+                        </button>
+<button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors">
+                            Export Report
+                        </button>
+</div>
+</div>
+<!-- Summary Stats Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="bg-white dark:bg-[#1a120b] border border-[#eadbcd] dark:border-[#3d2d1e] rounded-xl p-6 shadow-sm">
+<p class="text-[#a17345] text-sm font-medium mb-1">Today's Revenue</p>
+<p class="text-primary text-3xl font-black">1,250,000₫</p>
+<div class="flex items-center gap-1 mt-2">
+<span class="material-symbols-outlined text-[#07880e] text-sm">trending_up</span>
+<p class="text-[#07880e] text-sm font-bold">+12.5%</p>
+<p class="text-[#a17345] text-xs ml-1">vs yesterday</p>
+</div>
+</div>
+<div class="bg-white dark:bg-[#1a120b] border border-[#eadbcd] dark:border-[#3d2d1e] rounded-xl p-6 shadow-sm">
+<p class="text-[#a17345] text-sm font-medium mb-1">Total Orders</p>
+<p class="text-3xl font-black">42</p>
+<div class="flex items-center gap-1 mt-2 text-[#07880e]">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+<p class="text-sm font-bold">+8%</p>
+</div>
+</div>
+<div class="bg-white dark:bg-[#1a120b] border border-[#eadbcd] dark:border-[#3d2d1e] rounded-xl p-6 shadow-sm">
+<p class="text-[#a17345] text-sm font-medium mb-1">Avg. Order Value</p>
+<p class="text-3xl font-black">29,760₫</p>
+<div class="flex items-center gap-1 mt-2 text-red-500">
+<span class="material-symbols-outlined text-sm">trending_down</span>
+<p class="text-sm font-bold">-2.1%</p>
+</div>
+</div>
+</div>
+<!-- Charts and Lists Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Daily Revenue Chart -->
+<div class="lg:col-span-2 flex flex-col gap-2 rounded-xl border border-[#eadbcd] dark:border-[#3d2d1e] p-6 bg-white dark:bg-[#1a120b] shadow-sm">
+<div class="flex justify-between items-center mb-4">
+<div>
+<p class="text-lg font-bold">Weekly Performance</p>
+<p class="text-sm text-[#a17345]">Revenue Trend (Last 7 Days)</p>
+</div>
+<p class="text-2xl font-bold">8,750,000₫</p>
+</div>
+<div class="grid min-h-[240px] grid-flow-col gap-4 grid-rows-[1fr_auto] items-end justify-items-center px-2">
+<div class="relative w-full group">
+<div class="bg-primary/20 hover:bg-primary/40 rounded-t-lg w-full transition-all" style="height: 65%;"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">1.1M</div>
+</div>
+<p class="text-[#a17345] text-xs font-bold py-3">Mon</p>
+<div class="relative w-full group">
+<div class="bg-primary/20 hover:bg-primary/40 rounded-t-lg w-full transition-all" style="height: 50%;"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">0.8M</div>
+</div>
+<p class="text-[#a17345] text-xs font-bold py-3">Tue</p>
+<div class="relative w-full group">
+<div class="bg-primary/20 hover:bg-primary/40 rounded-t-lg w-full transition-all" style="height: 85%;"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">1.4M</div>
+</div>
+<p class="text-[#a17345] text-xs font-bold py-3">Wed</p>
+<div class="relative w-full group">
+<div class="bg-primary rounded-t-lg w-full transition-all" style="height: 100%;"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">1.7M</div>
+</div>
+<p class="text-[#a17345] text-xs font-bold py-3">Thu</p>
+<div class="relative w-full group">
+<div class="bg-primary/20 hover:bg-primary/40 rounded-t-lg w-full transition-all" style="height: 75%;"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">1.2M</div>
+</div>
+<p class="text-[#a17345] text-xs font-bold py-3">Fri</p>
+<div class="relative w-full group">
+<div class="bg-primary/20 hover:bg-primary/40 rounded-t-lg w-full transition-all" style="height: 90%;"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">1.5M</div>
+</div>
+<p class="text-[#a17345] text-xs font-bold py-3">Sat</p>
+<div class="relative w-full group">
+<div class="bg-primary/20 hover:bg-primary/40 rounded-t-lg w-full transition-all" style="height: 40%;"></div>
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">0.6M</div>
+</div>
+<p class="text-[#a17345] text-xs font-bold py-3">Sun</p>
+</div>
+</div>
+<!-- Top Selling Items -->
+<div class="flex flex-col rounded-xl border border-[#eadbcd] dark:border-[#3d2d1e] p-6 bg-white dark:bg-[#1a120b] shadow-sm">
+<h3 class="text-lg font-bold mb-6">Top Selling Items</h3>
+<div class="space-y-6">
+<!-- Item 1 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-sm">
+<span class="font-bold">Traditional Banh Mi</span>
+<span class="text-[#a17345]">124 units</span>
+</div>
+<div class="w-full bg-[#f4ede6] dark:bg-[#3d2d1e] h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[85%] rounded-full"></div>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-sm">
+<span class="font-bold">Iced Milk Coffee</span>
+<span class="text-[#a17345]">98 units</span>
+</div>
+<div class="w-full bg-[#f4ede6] dark:bg-[#3d2d1e] h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[65%] rounded-full"></div>
+</div>
+</div>
+<!-- Item 3 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-sm">
+<span class="font-bold">Spring Rolls (Set)</span>
+<span class="text-[#a17345]">76 units</span>
+</div>
+<div class="w-full bg-[#f4ede6] dark:bg-[#3d2d1e] h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[45%] rounded-full"></div>
+</div>
+</div>
+<!-- Item 4 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-sm">
+<span class="font-bold">Phở Bò (Beef)</span>
+<span class="text-[#a17345]">54 units</span>
+</div>
+<div class="w-full bg-[#f4ede6] dark:bg-[#3d2d1e] h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[35%] rounded-full"></div>
+</div>
+</div>
+<!-- Item 5 -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-center text-sm">
+<span class="font-bold">Grilled Pork Rice</span>
+<span class="text-[#a17345]">42 units</span>
+</div>
+<div class="w-full bg-[#f4ede6] dark:bg-[#3d2d1e] h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[25%] rounded-full"></div>
+</div>
+</div>
+</div>
+<button class="mt-8 text-primary font-bold text-sm flex items-center justify-center gap-1 hover:underline">
+                            View All Inventory <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
