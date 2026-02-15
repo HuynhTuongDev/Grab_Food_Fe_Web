@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Home, ShoppingCart, CreditCard, Clock } from 'lucide-react';
+import { Home, ShoppingCart, CreditCard, Clock, UserCircle, Bell } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 import { Badge } from '../../../components/ui/Badge';
 
@@ -52,6 +52,17 @@ export default function CustomerLayout() {
                 </Link>
 
                 <Link
+                    to="/notifications"
+                    className={cn(
+                        'flex flex-col items-center justify-center w-full h-full space-y-1',
+                        isActive('/notifications') ? 'text-orange-500' : 'text-gray-500 hover:text-gray-700'
+                    )}
+                >
+                    <Bell className="w-6 h-6" />
+                    <span className="text-[10px] font-medium">Thông báo</span>
+                </Link>
+
+                <Link
                     to="/orders"
                     className={cn(
                         'flex flex-col items-center justify-center w-full h-full space-y-1',
@@ -60,6 +71,17 @@ export default function CustomerLayout() {
                 >
                     <Clock className="w-6 h-6" />
                     <span className="text-[10px] font-medium">Đơn hàng</span>
+                </Link>
+
+                <Link
+                    to="/profile"
+                    className={cn(
+                        'flex flex-col items-center justify-center w-full h-full space-y-1',
+                        isActive('/profile') ? 'text-orange-500' : 'text-gray-500 hover:text-gray-700'
+                    )}
+                >
+                    <UserCircle className="w-6 h-6" />
+                    <span className="text-[10px] font-medium">Tài khoản</span>
                 </Link>
             </div>
         </div>

@@ -10,7 +10,8 @@ import {
   X,
   Search,
   Bell,
-  Settings2
+  Settings2,
+  Ticket
 } from 'lucide-react';
 import { cn } from '../../../lib/utils';
 
@@ -25,6 +26,7 @@ export default function AdminLayout() {
     { name: 'User Management', path: '/admin/users', icon: Users },
     { name: 'Store Management', path: '/admin/stores', icon: Store },
     { name: 'Category Management', path: '/admin/categories', icon: Tag },
+    { name: 'Voucher Management', path: '/admin/vouchers', icon: Ticket },
     { name: 'Transactions', path: '/admin/transactions', icon: Receipt },
   ];
 

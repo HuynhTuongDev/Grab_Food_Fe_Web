@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Settings, X } from 'lucide-react';
 import { foodApi, foodTypeApi } from '../../../api/api';
 import type { FoodDto } from '../../../types/swagger';
 import { toast } from 'sonner';
@@ -11,6 +11,10 @@ const MenuManagement = () => {
   const [menuItems, setMenuItems] = useState<FoodDto[]>([]);
   const [categories, setCategories] = useState<{ id: number, name: string }[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Category Management State
+  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
 
   // New Item Form
   const [newItem, setNewItem] = useState({
@@ -57,13 +61,37 @@ const MenuManagement = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Delete this item?")) return;
-    // Note: Delete API might be missing in `foodApi` based on previous files, 
-    // but let's assume it exists or I might have added it implicitly. 
-    // Actually checking api.ts... it has getAll, create, update, getById. 
-    // DELETE IS MISSING in foodApi! 
-    // I will implement a visual delete for now or skip it if API not supported.
-    toast.error("Delete not supported by API yet");
+    if (!confirm("Are you sure you want to delete this item?")) return;
+    try {
+      await foodApi.delete(id);
+      toast.success("Item deleted");
+      fetchData();
+    } catch {
+      toast.error("Failed to delete item");
+    }
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCatName.trim()) return;
+    try {
+      await foodTypeApi.create({ name: newCatName });
+      toast.success("Category created");
+      setNewCatName('');
+      fetchData();
+    } catch {
+      toast.error("Failed to create category");
+    }
+  };
+
+  const handleDeleteCategory = async (id: number) => {
+    if (!confirm("Delete this category? Items in it may be affected.")) return;
+    try {
+      await foodTypeApi.delete(id);
+      toast.success("Category deleted");
+      fetchData();
+    } catch {
+      toast.error("Failed to delete category");
+    }
   };
 
 
@@ -99,7 +127,16 @@ const MenuManagement = () => {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar - Categories */}
         <div className="rounded-xl bg-white dark:bg-[#2d1b15] p-6 shadow-sm border border-gray-200 dark:border-gray-800 h-fit">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-4 text-lg">Categories</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-bold text-gray-900 dark:text-white text-lg">Categories</h3>
+            <button
+              onClick={() => setIsCatModalOpen(true)}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg text-gray-500"
+              title="Manage Categories"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          </div>
           <nav className="flex flex-col gap-2">
             <button
               onClick={() => setSelectedCategory('All')}
@@ -306,6 +343,51 @@ const MenuManagement = () => {
               >
                 Add Item
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Category Management Modal */}
+      {isCatModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#2d1b15] rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Manage Categories</h2>
+              <button onClick={() => setIsCatModalOpen(false)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="flex gap-2 mb-6">
+              <input
+                type="text"
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                placeholder="New Category Name"
+                className="flex-1 px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900 dark:text-white"
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateCategory()}
+              />
+              <button
+                onClick={handleCreateCategory}
+                disabled={!newCatName.trim()}
+                className="px-4 py-2 bg-orange-600 text-white font-bold rounded-lg disabled:opacity-50"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {categories.map(cat => (
+                <div key={cat.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-900 rounded-lg group">
+                  <span className="font-medium text-gray-900 dark:text-gray-200">{cat.name}</span>
+                  <button
+                    onClick={() => handleDeleteCategory(cat.id)}
+                    className="p-1.5 bg-white dark:bg-gray-800 text-red-500 rounded hover:bg-red-50 dark:hover:bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
         </div>

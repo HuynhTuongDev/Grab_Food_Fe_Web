@@ -32,13 +32,23 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use((response) => {
+    // Auto-unwrap: backend wraps responses as { result: ..., message: "Success" }
+    if (response.data && typeof response.data === 'object' && 'result' in response.data) {
+        console.log(`[API Unwrap] ${response.config?.url}: unwrapping .result from response`);
+        response.data = response.data.result;
+    }
     return response;
 }, (error) => {
     console.error(`[API Response Error] ${error.config?.url}:`, error.response?.status, error.response?.data);
     if (error.response?.status === 401) {
-        console.warn("401 Unauthorized detected. Token might be invalid or expired.");
-        // Only clear if we are sure it's an auth failure, but let's keep it for now
-        // localStorage.removeItem('token'); 
+        console.warn("401 Unauthorized detected. Clearing auth and redirecting.");
+        localStorage.removeItem('token');
+        localStorage.removeItem('roleName');
+        localStorage.removeItem('bypass_user');
+        // Redirect to login if not already there
+        if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
+        }
     }
     return Promise.reject(error);
 });
@@ -50,6 +60,7 @@ export const foodApi = {
     create: (data: any) => api.post('/api/foods', data),
     update: (data: any) => api.put('/api/foods', data),
     getById: (id: number) => api.get<FoodDto>(`/api/foods/${id}`),
+    delete: (id: number) => api.delete(`/api/foods/${id}`),
 };
 
 export const foodStoreApi = {
@@ -66,9 +77,14 @@ export const foodTypeApi = {
 };
 
 export const orderApi = {
-    getHistory: () => api.get('/api/orders/history'),
+    getHistory: (params?: { status?: number }) => api.get('/api/orders/history', { params }),
     getById: (id: string) => api.get(`/api/orders/${id}`),
     create: (data: any) => api.post('/api/orders', data),
+    cancel: (id: string) => api.post(`/api/orders/${id}/cancel`),
+    getStoreOrders: (storeId: number, params?: { status?: number }) =>
+        api.get(`/api/orders/store/${storeId}`, { params }),
+    updateStatus: (id: string, status: number) =>
+        api.put(`/api/orders/${id}/status`, { status }),
 };
 
 export const storeApi = {
@@ -87,12 +103,11 @@ export const userApi = {
 
         let token = null;
 
-        // 1. Check Body
+        // 1. Check Body (after auto-unwrap, res.data IS the result)
         if (typeof res.data === 'string' && res.data.length > 20) token = res.data;
         else if (res.data?.token) token = res.data.token;
         else if (res.data?.accessToken) token = res.data.accessToken;
         else if (res.data?.data?.token) token = res.data.data.token;
-        else if (res.data?.result?.token) token = res.data.result.token;
 
         // 2. Check Headers (Common patterns)
         if (!token) {
@@ -104,17 +119,14 @@ export const userApi = {
             localStorage.setItem('token', cleanToken);
             console.log("TOKEN FOUND & SAVED:", cleanToken.substring(0, 15) + "...");
             return { ...res, token: cleanToken };
-        } else if (res.data?.message === "Success" || res.data?.result?.message === "Success" || (res.data?.result?.id)) {
-            // FALLBACK BYPASS: Backend says Success but gives no token.
-            // We use the User ID to create a fake session token so UI allows access.
-            const userId = res.data?.result?.id || 'guest';
+        } else if (res.data?.id) {
+            // FALLBACK BYPASS: Backend returned user data but no token
+            const userId = res.data.id || 'guest';
             const fakeToken = `session-bypass-token-${userId}-${Date.now()}`;
             localStorage.setItem('token', fakeToken);
 
             // SAVE BYPASS USER INFO
-            if (res.data?.result) {
-                localStorage.setItem('bypass_user', JSON.stringify(res.data.result));
-            }
+            localStorage.setItem('bypass_user', JSON.stringify(res.data));
 
             console.warn("CRITICAL BACKEND BUG: No token found. Using SESSION BYPASS MODE.");
             return { ...res, token: fakeToken };
@@ -203,6 +215,8 @@ export const reviewApi = {
     getByStore: (storeId: number) => api.get(`/api/reviews/store/${storeId}`),
     canReview: (orderId: string) => api.get(`/api/reviews/can-review/${orderId}`),
     reply: (id: number, reply: string) => api.post(`/api/reviews/${id}/reply`, { reply }),
+    delete: (id: number) => api.delete(`/api/reviews/${id}`),
+    getById: (id: number) => api.get(`/api/reviews/${id}`),
 };
 
 export const walletApi = {
@@ -219,6 +233,7 @@ export const notificationApi = {
     getUnreadCount: () => api.get('/api/notifications/unread-count'),
     markRead: (id: number) => api.put(`/api/notifications/${id}/read`),
     markAllRead: () => api.put('/api/notifications/read-all'),
+    delete: (id: number) => api.delete(`/api/notifications/${id}`),
 };
 
 export const tenantApi = {
@@ -231,7 +246,8 @@ export const tenantApi = {
 
 export const voucherApi = {
     getAll: () => api.get('/api/vouchers'),
-    getAvailable: () => api.get('/api/vouchers/available'),
+    getAvailable: (params?: { orderAmount?: number; storeId?: number }) =>
+        api.get('/api/vouchers/available', { params }),
     getByCode: (code: string) => api.get(`/api/vouchers/code/${code}`),
     apply: (code: string) => api.post('/api/vouchers/apply', { code }),
     getById: (id: string) => api.get(`/api/vouchers/${id}`),

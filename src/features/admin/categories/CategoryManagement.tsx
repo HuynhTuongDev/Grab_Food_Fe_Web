@@ -11,7 +11,7 @@ interface Category {
 
 const CategoryManagement = () => {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   const fetchCategories = async () => {
     try {

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { cn } from '../../../lib/utils';
-import { userApi, orderApi } from '../../../api/api';
+import { userApi, walletApi } from '../../../api/api';
 import type { UserProfileDto } from '../../../types/swagger';
 import { Badge } from '../../../components/ui/Badge';
 
@@ -27,25 +27,18 @@ export default function WalletPage() {
 
         const fetchData = async () => {
             try {
-                const [profileRes, transRes] = await Promise.all([
+                const [profileRes, balanceRes, transRes] = await Promise.all([
                     userApi.profile(),
-                    userApi.getTransactions().catch(() => ({ data: [] }))
+                    walletApi.getBalance().catch(() => ({ data: 0 })),
+                    walletApi.getTransactions().catch(() => ({ data: [] }))
                 ]);
 
-                setUser(profileRes.data);
+                const profileData = profileRes.data as any;
+                // Use wallet balance if available, fallback to profile balance
+                const balance = typeof balanceRes.data === 'number' ? balanceRes.data : (profileData?.balance || 0);
+                setUser({ ...profileData, balance });
 
-                let transData = Array.isArray(transRes.data) ? transRes.data : [];
-                if (transData.length === 0) {
-                    const ordersRes = await orderApi.getHistory().catch(() => ({ data: [] }));
-                    const orders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
-                    transData = orders.map((o: any) => ({
-                        id: o.id,
-                        type: 'payment',
-                        amount: o.totalAmount,
-                        date: o.orderDate || new Date().toISOString(),
-                        title: `Thanh toán đơn #${o.id.slice(-6).toUpperCase()}`
-                    }));
-                }
+                const transData = Array.isArray(transRes.data) ? transRes.data : [];
                 setTransactions(transData);
             } catch (error) {
                 console.error("Failed to fetch wallet data", error);
@@ -59,11 +52,17 @@ export default function WalletPage() {
     const handleTopUp = async () => {
         if (!amount || isNaN(Number(amount))) return;
         try {
-            await userApi.topUp(Number(amount));
+            await walletApi.deposit(Number(amount));
             toast.success(`Yêu cầu nạp ${parseInt(amount).toLocaleString()}đ đã được gửi`);
             setAmount('');
-            const res = await userApi.profile();
-            setUser(res.data);
+            // Refresh balance
+            const [profileRes, balanceRes] = await Promise.all([
+                userApi.profile(),
+                walletApi.getBalance().catch(() => ({ data: 0 }))
+            ]);
+            const profileData = profileRes.data as any;
+            const balance = typeof balanceRes.data === 'number' ? balanceRes.data : (profileData?.balance || 0);
+            setUser({ ...profileData, balance });
         } catch (error) {
             toast.error("Nạp tiền thất bại");
         }

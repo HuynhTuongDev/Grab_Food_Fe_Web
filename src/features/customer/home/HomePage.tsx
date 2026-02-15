@@ -1,6 +1,5 @@
 import { Search, MapPin, Star, Heart, Clock, ShoppingBag } from 'lucide-react';
 import { Input } from '../../../components/ui/Input';
-import { Button } from '../../../components/ui/Button';
 import { Card, CardContent } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
 import { motion } from 'framer-motion';
@@ -165,9 +164,9 @@ export default function HomePage() {
                 <div>
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-bold text-gray-900">🔥 Món phổ biến</h2>
-                        <Button variant="ghost" size="sm" className="text-orange-500 text-xs h-auto p-0 hover:bg-transparent hover:text-orange-600">
+                        <Link to="/foods" className="text-orange-500 text-xs hover:text-orange-600 font-medium">
                             Xem tất cả →
-                        </Button>
+                        </Link>
                     </div>
                     {isLoading ? (
                         <div className="flex space-x-4">
@@ -207,6 +206,9 @@ export default function HomePage() {
                 {/* RESTAURANTS LIST */}
                 <div className="pb-4">
                     <h2 className="text-lg font-bold text-gray-900 mb-4">🏪 Các nhà hàng gần bạn</h2>
+                    <Link to="/stores" className="text-orange-500 text-xs hover:text-orange-600 font-medium mb-4 block text-right -mt-3">
+                        Xem tất cả →
+                    </Link>
                     <div className="space-y-4">
                         {stores.map((store) => (
                             <Link to={`/store/${store.id}`} key={store.id} className="block group">

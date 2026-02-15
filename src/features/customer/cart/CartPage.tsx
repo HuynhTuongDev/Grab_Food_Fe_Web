@@ -1,19 +1,28 @@
-import { Minus, Plus, Trash2, MapPin, ShoppingBag, CreditCard, Tag, Ticket, ChevronRight } from 'lucide-react';
+import { Minus, Plus, Trash2, MapPin, ShoppingBag, CreditCard, Tag, Ticket, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '../../../components/ui/Button';
 import { Card } from '../../../components/ui/Card';
 import { Badge } from '../../../components/ui/Badge';
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Input } from '../../../components/ui/Input';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '../../../lib/utils';
-import { userApi, orderApi, voucherApi } from '../../../api/api';
+import { userApi, orderApi, voucherApi, addressApi } from '../../../api/api';
 
 export default function CartPage() {
     const navigate = useNavigate();
     const [cartItems, setCartItems] = useState<any[]>([]);
     const [vouchers, setVouchers] = useState<any[]>([]);
     const [selectedVoucher, setSelectedVoucher] = useState<any>(null);
+    const [voucherCode, setVoucherCode] = useState('');
+    const [voucherError, setVoucherError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isCheckingOut, setIsCheckingOut] = useState(false);
+    const [defaultAddress, setDefaultAddress] = useState<any>(null);
+
+    // Debounce ref for cart updates
+    const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const abortRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
@@ -25,11 +34,21 @@ export default function CartPage() {
 
         fetchCart();
         fetchVouchers();
+        fetchDefaultAddress();
     }, [navigate]);
+
+    const fetchDefaultAddress = async () => {
+        try {
+            const res = await addressApi.getDefault().catch(() => ({ data: null }));
+            setDefaultAddress(res.data);
+        } catch (e) {
+            console.error("Failed to fetch default address", e);
+        }
+    };
 
     const fetchVouchers = async () => {
         try {
-            const res = await voucherApi.getAll().catch(() => ({ data: [] }));
+            const res = await voucherApi.getAvailable().catch(() => voucherApi.getAll().catch(() => ({ data: [] })));
             setVouchers(Array.isArray(res.data) ? res.data : []);
         } catch (e) {
             console.error("Failed to fetch vouchers", e);
@@ -55,38 +74,78 @@ export default function CartPage() {
         }
     };
 
+    // Debounced cart sync to backend
+    const debouncedUpdateCart = useCallback((newOrderList: any) => {
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+        if (abortRef.current) abortRef.current.abort();
+
+        debounceTimer.current = setTimeout(async () => {
+            try {
+                abortRef.current = new AbortController();
+                await userApi.updateCart({ orderList: newOrderList });
+            } catch (e: any) {
+                if (e?.name !== 'CanceledError') {
+                    console.error("Failed to sync cart", e);
+                }
+            }
+        }, 500);
+    }, []);
+
     const updateQuantity = async (id: string, delta: number) => {
         const item = cartItems.find(i => i.id === id);
         if (!item) return;
 
         const newQty = Math.max(0, item.quantity + delta);
-        try {
-            if (newQty === 0) {
-                await removeItem(id);
-            } else {
-                const newOrderList = { ...cartItems.reduce((acc, i) => ({ ...acc, [i.id]: { quantity: i.id === id ? newQty : i.quantity, foodStore: i.foodStore } }), {}) };
-                await userApi.updateCart({ orderList: newOrderList });
-                await fetchCart();
-            }
-        } catch (e) {
-            toast.error("Không thể cập nhật giỏ hàng");
+        if (newQty === 0) {
+            await removeItem(id);
+            return;
         }
+
+        // Optimistic update
+        const updatedItems = cartItems.map(i => i.id === id ? { ...i, quantity: newQty } : i);
+        setCartItems(updatedItems);
+
+        // Debounced backend sync
+        const newOrderList = updatedItems.reduce((acc, i) => ({
+            ...acc,
+            [i.id]: { quantity: i.quantity, foodStore: i.foodStore }
+        }), {});
+        debouncedUpdateCart(newOrderList);
     };
 
     const removeItem = async (id: string) => {
         try {
-            const newOrderList = { ...cartItems.filter(i => i.id !== id).reduce((acc, i) => ({ ...acc, [i.id]: i }), {}) };
+            const remaining = cartItems.filter(i => i.id !== id);
+            setCartItems(remaining);
+            const newOrderList = remaining.reduce((acc, i) => ({ ...acc, [i.id]: { quantity: i.quantity, foodStore: i.foodStore } }), {});
             await userApi.updateCart({ orderList: newOrderList });
             toast.success('Đã xóa khỏi giỏ hàng');
-            await fetchCart();
         } catch (e) {
             toast.error("Lỗi khi xóa món ăn");
+            await fetchCart(); // Rollback
+        }
+    };
+
+    const handleApplyVoucherCode = async () => {
+        if (!voucherCode.trim()) return;
+        setVoucherError('');
+        try {
+            const res = await voucherApi.getByCode(voucherCode.trim());
+            if (res.data) {
+                setSelectedVoucher(res.data);
+                toast.success('Áp dụng mã giảm giá thành công!');
+                setVoucherCode('');
+            } else {
+                setVoucherError('Mã giảm giá không hợp lệ.');
+            }
+        } catch (err: any) {
+            setVoucherError(err.response?.data?.message || 'Mã giảm giá không tồn tại hoặc đã hết hạn.');
         }
     };
 
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
     const shippingFee = cartItems.length > 0 ? 15000 : 0;
-    const discount = selectedVoucher ? (selectedVoucher.discountType === 'percentage' ? (subtotal * selectedVoucher.value / 100) : selectedVoucher.value) : 0;
+    const discount = selectedVoucher ? (selectedVoucher.discountType === 'percentage' ? (subtotal * selectedVoucher.value / 100) : (selectedVoucher.value || 0)) : 0;
     const total = Math.max(0, subtotal + shippingFee - discount);
 
     const handleCheckout = async () => {
@@ -96,8 +155,9 @@ export default function CartPage() {
         }
 
         try {
+            setIsCheckingOut(true);
             const firstStoreId = cartItems[0]?.foodStore?.storeId;
-            const orderPayload = {
+            const orderPayload: any = {
                 storeId: firstStoreId,
                 totalAmount: total,
                 orderLines: cartItems.map(item => ({
@@ -107,12 +167,21 @@ export default function CartPage() {
                 }))
             };
 
+            if (selectedVoucher?.id) {
+                orderPayload.voucherId = selectedVoucher.id;
+            }
+            if (defaultAddress?.id) {
+                orderPayload.addressId = defaultAddress.id;
+            }
+
             await orderApi.create(orderPayload);
             await userApi.clearCart();
-            toast.success('Thanh toán thành công!');
+            toast.success('Đặt hàng thành công! 🎉');
             navigate('/orders');
         } catch (error: any) {
-            toast.error(error.response?.data?.message || "Thanh toán thất bại");
+            toast.error(error.response?.data?.message || "Đặt hàng thất bại");
+        } finally {
+            setIsCheckingOut(false);
         }
     };
 
@@ -150,6 +219,7 @@ export default function CartPage() {
                 <h1 className="text-2xl font-bold text-gray-900">Giỏ hàng</h1>
             </div>
 
+            {/* Cart Items */}
             <div className="space-y-4 mb-8">
                 {cartItems.map((item) => (
                     <Card key={item.id} className="p-3 border-none shadow-sm hover:shadow-md transition-all duration-300">
@@ -188,13 +258,29 @@ export default function CartPage() {
             </div>
 
             <div className="space-y-6">
+                {/* Voucher Section */}
                 <div className="space-y-3">
                     <div className="flex items-center space-x-2 text-gray-900 font-bold">
                         <Tag className="w-4 h-4 text-orange-600" />
                         <span className="text-sm">Ưu đãi của bạn</span>
                     </div>
 
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-3">
+                        {/* Voucher code input */}
+                        <div className="flex gap-2">
+                            <Input
+                                placeholder="Nhập mã giảm giá..."
+                                value={voucherCode}
+                                onChange={(e) => { setVoucherCode(e.target.value); setVoucherError(''); }}
+                                className="rounded-xl text-sm flex-1"
+                            />
+                            <Button size="sm" className="rounded-xl px-4 shrink-0" onClick={handleApplyVoucherCode}>
+                                Áp dụng
+                            </Button>
+                        </div>
+                        {voucherError && <p className="text-xs text-red-500">{voucherError}</p>}
+
+                        {/* Available vouchers */}
                         {vouchers.length === 0 ? (
                             <div className="flex items-center justify-between text-gray-400">
                                 <span className="text-xs">Chưa có mã giảm giá khả dụng</span>
@@ -202,7 +288,7 @@ export default function CartPage() {
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {vouchers.slice(0, 2).map(v => (
+                                {vouchers.slice(0, 3).map(v => (
                                     <button
                                         key={v.id}
                                         onClick={() => setSelectedVoucher(selectedVoucher?.id === v.id ? null : v)}
@@ -216,7 +302,7 @@ export default function CartPage() {
                                                 <Ticket className="w-5 h-5 text-orange-600" />
                                             </div>
                                             <div>
-                                                <p className="text-xs font-black text-gray-900">{v.title || v.code}</p>
+                                                <p className="text-xs font-black text-gray-900">{v.title || v.code || v.name}</p>
                                                 <p className="text-[10px] text-gray-500">Giảm {v.value?.toLocaleString()}{v.discountType === 'percentage' ? '%' : 'đ'}</p>
                                             </div>
                                         </div>
@@ -230,16 +316,33 @@ export default function CartPage() {
                     </div>
                 </div>
 
+                {/* Address Section */}
                 <div className="space-y-3">
                     <div className="flex items-center space-x-2 text-gray-900 font-bold">
                         <MapPin className="w-4 h-4 text-orange-600" />
                         <span className="text-sm">Địa chỉ giao hàng</span>
                     </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                        <p className="text-xs text-gray-500 italic">123 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh</p>
-                    </div>
+                    <Link to="/addresses" className="block">
+                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-3 flex-1">
+                                <div className="w-9 h-9 bg-orange-50 rounded-xl flex items-center justify-center shrink-0">
+                                    <MapPin className="w-4 h-4 text-orange-500" />
+                                </div>
+                                {defaultAddress ? (
+                                    <div>
+                                        <p className="text-xs font-bold text-gray-900">{defaultAddress.name}</p>
+                                        <p className="text-xs text-gray-500 italic">{defaultAddress.detail || defaultAddress.address}</p>
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-gray-400 italic">Chưa có địa chỉ. Nhấn để thêm.</p>
+                                )}
+                            </div>
+                            <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                        </div>
+                    </Link>
                 </div>
 
+                {/* Summary */}
                 <Card className="p-5 border-none shadow-sm space-y-3 bg-white rounded-2xl">
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-400 font-medium">Tạm tính</span>
@@ -252,7 +355,7 @@ export default function CartPage() {
                     {selectedVoucher && (
                         <div className="flex justify-between text-sm text-emerald-600">
                             <span className="font-medium flex items-center italic">
-                                <Ticket className="w-3 h-3 mr-1" /> KM ({selectedVoucher.code || 'GIAMGIA'})
+                                <Ticket className="w-3 h-3 mr-1" /> KM ({selectedVoucher.code || selectedVoucher.title || 'GIAMGIA'})
                             </span>
                             <span className="font-bold">-{discount.toLocaleString()}đ</span>
                         </div>
@@ -270,7 +373,12 @@ export default function CartPage() {
             </div>
 
             <div className="fixed bottom-20 left-4 right-4 z-40">
-                <Button className="w-full py-7 text-lg font-bold rounded-2xl shadow-2xl shadow-orange-300 transform active:scale-95 transition-transform" onClick={handleCheckout}>
+                <Button
+                    className="w-full py-7 text-lg font-bold rounded-2xl shadow-2xl shadow-orange-300 transform active:scale-95 transition-transform"
+                    onClick={handleCheckout}
+                    disabled={isCheckingOut}
+                >
+                    {isCheckingOut ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
                     THANH TOÁN NGAY
                 </Button>
             </div>

@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { BarChart3, ClipboardList, Store, LogOut, Search, Bell, User, Menu } from 'lucide-react';
+import { BarChart3, ClipboardList, Store, LogOut, Search, Bell, User, Menu, MessageSquare, Building2 } from 'lucide-react';
 import { useState } from 'react';
 
 const ManagerLayout = () => {
@@ -13,7 +13,9 @@ const ManagerLayout = () => {
     { label: 'Dashboard', icon: BarChart3, path: '/manager' },
     { label: 'Orders', icon: ClipboardList, path: '/manager/orders' },
     { label: 'Menu', icon: ClipboardList, path: '/manager/menu' },
-    { label: 'Store', icon: Store, path: '/manager/store' }
+    { label: 'Reviews', icon: MessageSquare, path: '/manager/reviews' },
+    { label: 'Tenants', icon: Building2, path: '/manager/tenants' },
+    { label: 'Store Profile', icon: Store, path: '/manager/store' }
   ];
 
   return (
@@ -81,11 +83,10 @@ const ManagerLayout = () => {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${
-                    isActive(item.path)
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive(item.path)
                       ? 'bg-orange-600 text-white shadow-lg'
                       : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
                   {item.label}
@@ -123,11 +124,10 @@ const ManagerLayout = () => {
                       key={item.path}
                       to={item.path}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${
-                        isActive(item.path)
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all ${isActive(item.path)
                           ? 'bg-orange-600 text-white shadow-lg'
                           : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }`}
+                        }`}
                     >
                       <Icon className="w-5 h-5" />
                       {item.label}

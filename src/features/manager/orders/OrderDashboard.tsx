@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Clock, User, Check, X, Phone, RefreshCw } from 'lucide-react';
-import { managerApi } from '../../../api/api';
+import { orderApi } from '../../../api/api';
 import type { OrderDto } from '../../../types/swagger';
 import { toast } from 'sonner';
+
+// Status mapping: backend may use numbers or strings
+const STATUS_MAP: Record<string, number> = {
+  'New': 0, 'Preparing': 1, 'Ready': 2, 'Delivering': 3, 'Completed': 4, 'Cancelled': 5
+};
 
 const OrderDashboard = () => {
   const [activeTab, setActiveTab] = useState<'New' | 'Preparing' | 'Ready' | 'Delivering'>('New');
@@ -12,8 +17,8 @@ const OrderDashboard = () => {
 
   const fetchOrders = async () => {
     try {
-      const res = await managerApi.getOrders();
-      // Ensure we always have an array
+      // Try fetching store orders – manager may have storeId in profile
+      const res = await orderApi.getHistory();
       setOrders(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error("Failed to fetch orders", error);
@@ -31,9 +36,10 @@ const OrderDashboard = () => {
 
   const handleStatusUpdate = async (orderId: string, status: string) => {
     try {
-      await managerApi.updateStatus(orderId, status);
+      const statusNum = STATUS_MAP[status] ?? 0;
+      await orderApi.updateStatus(orderId, statusNum);
       toast.success(`Order updated to ${status}`);
-      fetchOrders(); // Refresh immediately
+      fetchOrders();
     } catch (error) {
       toast.error("Failed to update order status");
     }
@@ -115,21 +121,21 @@ const OrderDashboard = () => {
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold transition-all whitespace-nowrap border-2 ${activeTab === tab.id
-                ? `border-transparent text-white bg-gradient-to-r ${tab.id === 'New'
-                  ? 'from-red-600 to-red-700'
-                  : tab.id === 'Preparing'
-                    ? 'from-yellow-600 to-yellow-700'
-                    : tab.id === 'Ready'
-                      ? 'from-blue-600 to-blue-700'
-                      : 'from-green-600 to-green-700'
-                }`
-                : `border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 bg-white dark:bg-[#2d1b15] hover:border-gray-300`
+              ? `border-transparent text-white bg-gradient-to-r ${tab.id === 'New'
+                ? 'from-red-600 to-red-700'
+                : tab.id === 'Preparing'
+                  ? 'from-yellow-600 to-yellow-700'
+                  : tab.id === 'Ready'
+                    ? 'from-blue-600 to-blue-700'
+                    : 'from-green-600 to-green-700'
+              }`
+              : `border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-300 bg-white dark:bg-[#2d1b15] hover:border-gray-300`
               }`}
           >
             <span>{tab.label}</span>
             <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${activeTab === tab.id
-                ? 'bg-white/30 text-white'
-                : `${tab.color.split(' ')[0]} text-opacity-20 bg-opacity-10`
+              ? 'bg-white/30 text-white'
+              : `${tab.color.split(' ')[0]} text-opacity-20 bg-opacity-10`
               }`}>
               {counts[tab.id] || 0}
             </span>
@@ -147,12 +153,12 @@ const OrderDashboard = () => {
             >
               {/* Card Header */}
               <div className={`p-4 ${activeTab === 'New'
-                  ? 'bg-red-50 dark:bg-red-500/10 border-b-2 border-red-600'
-                  : activeTab === 'Preparing'
-                    ? 'bg-yellow-50 dark:bg-yellow-500/10 border-b-2 border-yellow-600'
-                    : activeTab === 'Ready'
-                      ? 'bg-blue-50 dark:bg-blue-500/10 border-b-2 border-blue-600'
-                      : 'bg-green-50 dark:bg-green-500/10 border-b-2 border-green-600'
+                ? 'bg-red-50 dark:bg-red-500/10 border-b-2 border-red-600'
+                : activeTab === 'Preparing'
+                  ? 'bg-yellow-50 dark:bg-yellow-500/10 border-b-2 border-yellow-600'
+                  : activeTab === 'Ready'
+                    ? 'bg-blue-50 dark:bg-blue-500/10 border-b-2 border-blue-600'
+                    : 'bg-green-50 dark:bg-green-500/10 border-b-2 border-green-600'
                 }`}>
                 <div className="flex items-start justify-between mb-2">
                   <div>
